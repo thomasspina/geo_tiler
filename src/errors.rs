@@ -49,16 +49,6 @@ pub enum GeoTilerError {
     /// * `0` - Detailed error message
     FibonacciError(String),
 
-    /// Error when generating mesh points
-    ///
-    /// This can occur with invalid parameters such as an outer ring
-    /// with not enough points.
-    ///
-    /// # Fields
-    ///
-    /// * `0` - Detailed error message
-    MeshGenerationError(String),
-
     /// Error when point rotation cannot be determined.
     ///
     /// This typically occurs when the centroid of points is a zero vector
@@ -96,9 +86,6 @@ impl fmt::Display for GeoTilerError {
             }
             GeoTilerError::FibonacciError(msg) => {
                 write!(f, "Fibonacci sphere error: {}", msg)
-            }
-            GeoTilerError::MeshGenerationError(msg) => {
-                write!(f, "Mesh generation error: {}", msg)
             }
             GeoTilerError::RotationError(msg) => {
                 write!(f, "Point rotation error: {}", msg)

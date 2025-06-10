@@ -1,6 +1,7 @@
 mod errors;
 mod geometry;
 mod fibonacci;
+mod tile;
 
 
 pub use errors::GeoTilerError;
@@ -10,3 +11,7 @@ pub use geometry::{
     rotate_points_to_south_pole
 };
 pub use fibonacci::fibonacci_sphere;
+pub use tile::{
+    generate_grid,
+    Tile
+};
