@@ -1,19 +1,20 @@
-use geo_types::Polygon;
+use geo_types::{Polygon, Coord, LineString};
+use d3_geo_rs::polygon_contains::polygon_contains; 
 use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Tile {
-    pub vertices: Vec<(f64, f64)>,
+    pub vertices: LineString,
     pub polygons: Vec<Polygon<f64>>,
 }
 
 impl fmt::Display for Tile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "vertices: {:?} and {} polygons",
-            self.vertices,
-            self.polygons.len()
+        write!(f, "Tile {{ vertices: {:?}, polygons: {:?} }}",
+            self.vertices, self.polygons
         )
     }
+    
 }
 
 /// Generates a grid of tiles covering the entire Earth's surface using longitude and latitude coordinates.
@@ -47,25 +48,27 @@ impl fmt::Display for Tile {
 ///
 /// ```
 /// use geo_tiler::generate_grid;
-/// 
+/// use geo_types::Coord;
+///
 /// let grid = generate_grid(10);
 /// assert_eq!(grid.len(), 648); // 36 × 18 tiles
 ///
 /// let first_tile = &grid[0];
-/// assert_eq!(first_tile.vertices[0], (-180.0, -90.0)); // bottom-left corner
+/// let coords: Vec<Coord<f64>> = first_tile.vertices.coords().cloned().collect();
+/// assert_eq!(coords[0], Coord { x: -180.0, y: -90.0 }); // bottom-left corner
 /// ```
 pub fn generate_grid(step: usize) -> Vec<Tile> {
     let mut grid: Vec<Tile> = Vec::new();
 
     for i in (-180..180).step_by(step) {
         for j in (-90..90).step_by(step) {
-            let bl: (f64, f64) = (i as f64, j as f64);
-            let br: (f64, f64) = ((i + step as i32) as f64, j as f64);
-            let tl: (f64, f64) = (i as f64, (j + step as i32) as f64);
-            let tr: (f64, f64) = ((i + step as i32) as f64, (j + step as i32) as f64);
+            let bl: Coord<f64> = Coord { x: i as f64, y: j as f64 };
+            let br: Coord<f64> = Coord { x: (i + step as i32) as f64, y: j as f64 };
+            let tl: Coord<f64> = Coord { x: i as f64, y: (j + step as i32) as f64 };
+            let tr: Coord<f64> = Coord { x: (i + step as i32) as f64, y: (j + step as i32) as f64 };
 
             let tile: Tile = Tile {
-                vertices: vec![bl, br, tl, tr],
+                vertices: LineString::new(vec![bl, br, tl, tr]),
                 polygons: Vec::new()
             };
 
@@ -74,4 +77,11 @@ pub fn generate_grid(step: usize) -> Vec<Tile> {
     }
 
     grid
+}
+
+pub fn divide_polygon_among_grid(grid: &Vec<Tile>, polygon: &Polygon) {
+    
+    for tile in grid {
+        
+    }
 }
