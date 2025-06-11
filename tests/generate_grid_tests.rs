@@ -1,5 +1,5 @@
 use geo_tiler::{generate_grid, Tile};
-use geo_types::Coord;
+use geo::Coord;
 use approx::assert_relative_eq;
 
 #[test]
@@ -11,7 +11,7 @@ fn test_generate_grid_basic_functionality() {
     // total: 36 * 18 = 648 tiles
     assert_eq!(grid.len(), 648);
     for tile in &grid {
-        assert_eq!(tile.vertices.coords().count(), 4);
+        assert_eq!(tile.vertices.exterior().coords().count(), 4);
         assert_eq!(tile.polygons.len(), 0);
     }
 }
@@ -37,7 +37,7 @@ fn test_coordinate_ranges() {
     let step: usize = 45;
     let grid: Vec<Tile> = generate_grid(step);
     for tile in &grid {
-        for coord in tile.vertices.coords() {
+        for coord in tile.vertices.exterior().coords() {
             assert!(coord.x >= -180.0);
             assert!(coord.x <= 180.0);
             assert!(coord.y >= -90.0);
@@ -51,7 +51,7 @@ fn test_tile_dimensions() {
     let step: usize = 20;
     let grid: Vec<Tile> = generate_grid(step);
     for tile in &grid {
-        let coords: Vec<Coord<f64>> = tile.vertices.coords().cloned().collect();
+        let coords: Vec<Coord<f64>> = tile.vertices.exterior().coords().cloned().collect();
         let width: f64 = (coords[1].x - coords[0].x).abs();
         let height: f64 = (coords[2].y - coords[0].y).abs();
         assert_relative_eq!(width, step as f64);
@@ -66,8 +66,8 @@ fn test_no_overlapping_tiles() {
     for (i, tile1) in grid.iter().enumerate() {
         for (j, tile2) in grid.iter().enumerate() {
             if i != j {
-                let v1: Vec<Coord<f64>> = tile1.vertices.coords().cloned().collect();
-                let v2: Vec<Coord<f64>> = tile2.vertices.coords().cloned().collect();
+                let v1: Vec<Coord<f64>> = tile1.vertices.exterior().coords().cloned().collect();
+                let v2: Vec<Coord<f64>> = tile2.vertices.exterior().coords().cloned().collect();
                 if (v1[0].x - v2[0].x).abs() < 0.001 && (v1[1].x - v2[1].x).abs() < 0.001 {
                     assert!(
                         v1[0].y >= v2[2].y || v2[0].y >= v1[2].y,
@@ -89,7 +89,7 @@ fn test_complete_coverage() {
     let mut min_lat: f64 = f64::INFINITY;
     let mut max_lat: f64 = f64::NEG_INFINITY;
     for tile in &grid {
-        for coord in tile.vertices.coords() {
+        for coord in tile.vertices.exterior().coords() {
             min_lon = min_lon.min(coord.x);
             max_lon = max_lon.max(coord.x);
             min_lat = min_lat.min(coord.y);
