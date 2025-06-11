@@ -3,4 +3,4 @@ This is a project which transforms 2D, single ringed, geojson polygon features i
 
 ## Sources
 
-- (Martinez-Rueda Polygon Clipping)[https://liorsinai.github.io/mathematics/2025/01/11/bentley-ottman.html]
+- [Martinez-Rueda Polygon Clipping](https://liorsinai.github.io/mathematics/2025/01/11/bentley-ottman.html)
