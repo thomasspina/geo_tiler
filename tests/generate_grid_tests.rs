@@ -11,7 +11,7 @@ fn test_generate_grid_basic_functionality() {
     // total: 36 * 18 = 648 tiles
     assert_eq!(grid.len(), 648);
     for tile in &grid {
-        assert_eq!(tile.vertices.exterior().coords().count(), 4);
+        assert_eq!(tile.vertices.exterior().coords().count(), 5);
         assert_eq!(tile.polygons.len(), 0);
     }
 }

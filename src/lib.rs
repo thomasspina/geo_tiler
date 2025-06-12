@@ -13,5 +13,6 @@ pub use geometry::{
 pub use fibonacci::fibonacci_sphere;
 pub use tile::{
     generate_grid,
+    clip_polygon_to_tiles,
     Tile
 };

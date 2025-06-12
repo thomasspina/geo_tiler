@@ -47,7 +47,7 @@ impl fmt::Display for Tile {
 ///
 /// ```
 /// use geo_tiler::generate_grid;
-/// use geo_types::Coord;
+/// use geo::Coord;
 ///
 /// let grid = generate_grid(10);
 /// assert_eq!(grid.len(), 648); // 36 × 18 tiles
@@ -78,12 +78,12 @@ pub fn generate_grid(step: usize) -> Vec<Tile> {
     grid
 }
 
-pub fn divide_polygon_among_grid(grid: &Vec<Tile>, polygon: &Polygon<f64>) {
-    
+pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) {
     for tile in grid {
-        
         let resulting_polygons: MultiPolygon<f64> = tile.vertices.intersection(polygon);
-
-
+        
+        for rp in resulting_polygons {
+            tile.polygons.push(rp);
+        }
     }
 }
