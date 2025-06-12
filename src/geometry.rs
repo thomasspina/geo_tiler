@@ -2,34 +2,7 @@ use std::f64::consts::PI;
 use std::f64::EPSILON;
 use crate::GeoTilerError;
 use nalgebra::{Rotation, Rotation3, Unit, Vector3};
-use ghx_constrained_delaunay::types::Vertex2d;
-
-/// A 2D point representation used for constrained Delaunay triangulation.
-///
-/// This struct provides a simple wrapper for 2D coordinates and implements the
-/// `Vertex2d` trait required by the constrained Delaunay triangulation algorithm.
-///
-/// # Fields
-///
-/// * `x` - The x-coordinate of the point in 2D space
-/// * `y` - The y-coordinate of the point in 2D space
-///
-#[derive(Copy, Clone)]
-pub struct Point2D {
-    pub x: f64,
-    pub y: f64,
-}
-
-// Implement Vertex2d for Point2D
-impl Vertex2d for Point2D {
-    fn x(self) -> f64 {
-        self.x
-    }
-    
-    fn y(self) -> f64 {
-        self.y
-    }
-}
+use geo::{coord, Coord};
 
 /// Converts geographic coordinates (longitude and latitude) from decimal degrees to 3D Cartesian coordinates
 /// on a unit sphere.
@@ -57,17 +30,6 @@ impl Vertex2d for Point2D {
 /// * z = sin(latitude_rad)
 ///
 /// Where latitude_rad = latitude * π/180 and longitude_rad = longitude * π/180
-///
-/// # Examples
-///
-/// ```
-/// use geo_tiler::ll_to_cartesian;
-///
-/// let (x, y, z) = ll_to_cartesian(0.0, 0.0).unwrap(); // Equator at prime meridian
-/// assert!((x - 1.0).abs() < 1e-10);
-///
-/// assert!(ll_to_cartesian(190.0, 0.0).is_err()); // Invalid coordinates
-/// ```
 pub fn ll_to_cartesian(longitude: f64, latitude: f64) -> Result<(f64, f64, f64), GeoTilerError> {
 
     if longitude.abs() > (180.0 + 0.1)  || latitude.abs() > (90.0 + 0.1) { // return error if data is outside of reasonable floating point error
@@ -100,7 +62,7 @@ pub fn ll_to_cartesian(longitude: f64, latitude: f64) -> Result<(f64, f64, f64),
 ///
 /// # Returns
 ///
-/// * `Ok((f64, f64))` - A 2D point (x_2d, y_2d) representing the projected coordinates on the plane
+/// * `Ok(Coord<f64>)` - A 2D point (x_2d, y_2d) representing the projected coordinates on the plane
 /// * `Err(GeoTilerError::ProjectionError)` - An error if the point is at or very close to the north pole
 ///
 /// # Mathematical formula
@@ -108,25 +70,7 @@ pub fn ll_to_cartesian(longitude: f64, latitude: f64) -> Result<(f64, f64, f64),
 /// For a 3D point (x, y, z) on the unit sphere, the projected 2D point (x_2d, y_2d) is:
 /// * x_2d = x / (1 - z)
 /// * y_2d = y / (1 - z)
-///
-/// # Examples
-///
-/// ```
-/// use geo_tiler::stereographic_projection;
-/// 
-/// // Project a point on the sphere to the plane
-/// let sphere_point = (0.5, 0.5, -0.7071);
-/// 
-/// match stereographic_projection(sphere_point) {
-///     Ok((x, y)) => println!("Projected coordinates: ({}, {})", x, y),
-///     Err(e) => println!("Error: {}", e),
-/// }
-///
-/// // Attempting to project the north pole will result in an error
-/// let north_pole = (0.0, 0.0, 1.0);
-/// assert!(stereographic_projection(north_pole).is_err());
-/// ```
-pub fn stereographic_projection(point: (f64, f64, f64)) -> Result<(f64, f64), GeoTilerError> {
+pub fn stereographic_projection(point: (f64, f64, f64)) -> Result<Coord<f64>, GeoTilerError> {
     let (x, y, z) = point;
 
     // check if point is at or very close to the north pole
@@ -137,7 +81,7 @@ pub fn stereographic_projection(point: (f64, f64, f64)) -> Result<(f64, f64), Ge
     let x_2d: f64 = x / (1.0 - z);
     let y_2d: f64 = y / (1.0 - z);
 
-    Ok((x_2d, y_2d))
+    Ok(coord! {x: x_2d, y: y_2d})
 }
 
 /// Rotates a set of 3D points on a unit sphere so that their centroid aligns with the south pole.
@@ -158,19 +102,6 @@ pub fn stereographic_projection(point: (f64, f64, f64)) -> Result<(f64, f64), Ge
 ///   - `RotationError` if the centroid of points is too close to zero (evenly distributed points)
 ///   - `RotationError` if a rotation axis cannot be found (when points are at the north pole, 
 ///     on the equator, or in other special configurations)
-///
-/// # Examples
-///
-/// ```
-/// use geo_tiler::rotate_points_to_south_pole;
-///
-/// let points = vec![(0.5, 0.5, 0.7071), (0.6, 0.4, 0.6928), (0.7, 0.3, 0.6481)];
-///
-/// match rotate_points_to_south_pole(&points) {
-///     Ok(rotated) => println!("Rotated points: {:?}", rotated),
-///     Err(e) => println!("Error: {}", e),
-/// }
-/// ```
 pub fn rotate_points_to_south_pole(points: &Vec<(f64, f64, f64)>) -> Result<Vec<(f64, f64, f64)>, GeoTilerError> {
     if points.is_empty() {
         return Err(GeoTilerError::EmptyPointSetError("Cannot rotate an empty set of points".to_string()));

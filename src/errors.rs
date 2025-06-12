@@ -65,6 +65,46 @@ pub enum GeoTilerError {
     ///
     /// * `0` - Detailed error message
     EmptyPointSetError(String),
+
+    /// Error when generating mesh points
+    ///
+    /// This can occur with invalid parameters such as an outer ring
+    /// with not enough points.
+    ///
+    /// # Fields
+    ///
+    /// * `0` - Detailed error message
+    MeshGenerationError(String),
+
+    /// Error when grid generation parameters are invalid.
+    ///
+    /// This occurs when the step size is zero, too large, or would result
+    /// in an invalid grid configuration.
+    ///
+    /// # Fields
+    ///
+    /// * `0` - Detailed error message
+    GridGenerationError(String),
+    
+    /// Error when polygon geometry is invalid.
+    ///
+    /// This occurs when the input polygon has invalid geometry such as
+    /// self-intersections, insufficient vertices, or invalid coordinates.
+    ///
+    /// # Fields
+    ///
+    /// * `0` - Detailed error message
+    InvalidPolygonError(String),
+
+    /// Error when delaunay triangulation encounters an error
+    ///
+    /// This occurs when the delaunay triangulation cannot be completed 
+    /// for any reason whatsoever.
+    ///
+    /// # Fields
+    ///
+    /// * `0` - Detailed error message
+    TriangulationError(String),
 }
 
 impl fmt::Display for GeoTilerError {
@@ -90,8 +130,20 @@ impl fmt::Display for GeoTilerError {
             GeoTilerError::RotationError(msg) => {
                 write!(f, "Point rotation error: {}", msg)
             }
+            GeoTilerError::MeshGenerationError(msg) => {
+                write!(f, "Mesh generation error: {}", msg)
+            }
             GeoTilerError::EmptyPointSetError(msg) => {
                 write!(f, "Empty point set error: {}", msg)
+            }
+            GeoTilerError::GridGenerationError(msg) => {
+                write!(f, "Grid generation error: {}", msg)
+            }
+            GeoTilerError::InvalidPolygonError(msg) => {
+                write!(f, "Invalid polygon error: {}", msg)
+            }
+            GeoTilerError::TriangulationError(msg) => {
+                write!(f, "Triangulation error: {}", msg)
             }
         }
     }

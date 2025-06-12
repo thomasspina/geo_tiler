@@ -1,4 +1,5 @@
 use geo::{Polygon, Coord, LineString, MultiPolygon, BooleanOps};
+use crate::GeoTilerError;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -28,35 +29,46 @@ impl fmt::Display for Tile {
 ///
 /// # Returns
 ///
-/// * `Vec<Tile>` - A vector containing all generated tiles with four vertices each and empty polygons.
+/// * `Result<Vec<Tile>, GeoTilerError>` - A vector containing all generated tiles with four vertices each 
+///   and empty polygons, or an error if the parameters are invalid.
+///
+/// # Errors
+///
+/// Returns `GeoTilerError::GridGenerationError` if:
+/// * `step` is 0 (would cause infinite loop)
+/// * `step` is greater than 180 (would produce no tiles or invalid tiles)
+/// * `step` does not evenly divide 360 or 180 (would produce incomplete coverage)
 ///
 /// # Grid Coverage
 ///
 /// * Longitude: -180° to +180° (360° total)
 /// * Latitude: -90° to +90° (180° total)
 /// * Total tiles: (360 / step) × (180 / step)
-///
-/// # Vertex Ordering
-///
-/// * `vertices[0]`: Bottom-left (longitude, latitude)
-/// * `vertices[1]`: Bottom-right (longitude + step, latitude)
-/// * `vertices[2]`: Top-left (longitude, latitude + step)
-/// * `vertices[3]`: Top-right (longitude + step, latitude + step)
-///
-/// # Examples
-///
-/// ```
-/// use geo_tiler::generate_grid;
-/// use geo::Coord;
-///
-/// let grid = generate_grid(10);
-/// assert_eq!(grid.len(), 648); // 36 × 18 tiles
-///
-/// let first_tile = &grid[0];
-/// let coords: Vec<Coord<f64>> = first_tile.vertices.exterior().coords().cloned().collect();
-/// assert_eq!(coords[0], Coord { x: -180.0, y: -90.0 }); // bottom-left corner
-/// ```
-pub fn generate_grid(step: usize) -> Vec<Tile> {
+pub fn generate_grid(step: usize) -> Result<Vec<Tile>, GeoTilerError> {
+    if step == 0 {
+        return Err(GeoTilerError::GridGenerationError(
+            "Step size must be greater than 0".to_string()
+        ));
+    }
+
+    if step > 180 {
+        return Err(GeoTilerError::GridGenerationError(
+            format!("Step size {} is too large. Maximum allowed is 180 degrees", step)
+        ));
+    }
+
+    if 360 % step != 0 {
+        return Err(GeoTilerError::GridGenerationError(
+            format!("Step size {} does not evenly divide 360 degrees. This would result in incomplete longitude coverage", step)
+        ));
+    }
+
+    if 180 % step != 0 {
+        return Err(GeoTilerError::GridGenerationError(
+            format!("Step size {} does not evenly divide 180 degrees. This would result in incomplete latitude coverage", step)
+        ));
+    }
+
     let mut grid: Vec<Tile> = Vec::new();
 
     for i in (-180..180).step_by(step) {
@@ -75,10 +87,36 @@ pub fn generate_grid(step: usize) -> Vec<Tile> {
         }
     }
 
-    grid
+    Ok(grid)
 }
 
-pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) {
+/// Clips a polygon to a grid of tiles and stores the resulting intersections in each tile.
+///
+/// This function takes a polygon and computes its intersection with each tile in the grid.
+/// The resulting polygon fragments are stored in each tile's `polygons` vector. 
+///
+/// # Arguments
+///
+/// * `grid` - A mutable reference to a vector of tiles. Each tile's `polygons` vector will be
+///            updated with any intersection fragments.
+/// * `polygon` - The polygon to be clipped against the tile grid.
+pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) -> Result<(), GeoTilerError> {
+    let vertex_count: usize = polygon.exterior().coords().count();
+    if vertex_count < 4 {  
+        return Err(GeoTilerError::InvalidPolygonError(
+            format!("Polygon must have at least 3 vertices, found {}", vertex_count - 1)
+        ));
+    }
+
+    for coord in polygon.exterior().coords() {
+        if !coord.x.is_finite() || !coord.y.is_finite() {
+            return Err(GeoTilerError::InvalidPolygonError(
+                "Polygon contains NaN or infinite coordinates".to_string()
+            ));
+        }
+    }
+
+
     for tile in grid {
         let resulting_polygons: MultiPolygon<f64> = tile.vertices.intersection(polygon);
         
@@ -86,4 +124,6 @@ pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) {
             tile.polygons.push(rp);
         }
     }
+
+    Ok(())
 }

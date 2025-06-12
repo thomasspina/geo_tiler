@@ -2,6 +2,7 @@ mod errors;
 mod geometry;
 mod fibonacci;
 mod tile;
+mod mesh_generator;
 
 
 pub use errors::GeoTilerError;
@@ -15,4 +16,8 @@ pub use tile::{
     generate_grid,
     clip_polygon_to_tiles,
     Tile
+};
+pub use mesh_generator::{
+    generate_polygon_feature_mesh,
+    get_mesh_points
 };
