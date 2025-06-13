@@ -101,6 +101,7 @@ pub fn generate_grid(step: usize) -> Result<Vec<Tile>, GeoTilerError> {
 ///            updated with any intersection fragments.
 /// * `polygon` - The polygon to be clipped against the tile grid.
 pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) -> Result<(), GeoTilerError> {
+    
     let vertex_count: usize = polygon.exterior().coords().count();
     if vertex_count < 4 {  
         return Err(GeoTilerError::InvalidPolygonError(
@@ -115,7 +116,6 @@ pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) -> Re
             ));
         }
     }
-
 
     for tile in grid {
         let resulting_polygons: MultiPolygon<f64> = tile.vertices.intersection(polygon);

@@ -88,7 +88,7 @@ pub fn generate_polygon_feature_mesh(polygon: &Polygon) -> Result<PolygonMeshDat
         let projected_point: Coord<f64> = stereographic_projection(point)?;
 
         let projected_point: CoordVertex<f64> = CoordVertex { x: projected_point.x, y: projected_point.y };
-
+        
         projected_points.push(projected_point);
     }
     
