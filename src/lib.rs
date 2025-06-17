@@ -15,9 +15,11 @@ pub use fibonacci::fibonacci_sphere;
 pub use tile::{
     generate_grid,
     clip_polygon_to_tiles,
+    clamp_polygons,
     Tile
 };
 pub use mesh_generator::{
     generate_polygon_feature_mesh,
-    get_mesh_points
+    get_mesh_points,
+    PolygonMeshData
 };

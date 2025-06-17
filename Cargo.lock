@@ -219,6 +219,8 @@ dependencies = [
  "geojson",
  "ghx_constrained_delaunay",
  "nalgebra",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

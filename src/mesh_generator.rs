@@ -10,6 +10,7 @@ use crate::{
     stereographic_projection, 
     GeoTilerError
 };
+use serde::{Serialize};
 
 
 const DEFAULT_FIBONACCI_POINT_COUNT: usize = 3000;
@@ -27,7 +28,7 @@ const DEFAULT_FIBONACCI_POINT_COUNT: usize = 3000;
 /// * `triangles` - Triangle indices for the mesh, flattened as [i1, i2, i3, j1, j2, j3, ...].
 ///   Each consecutive triplet of indices defines one triangle by referencing vertices in the
 ///   `vertices` field.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PolygonMeshData {
     /// 3D points forming the mesh (x, y, z coordinates)
     pub vertices: Vec<(f64, f64, f64)>,

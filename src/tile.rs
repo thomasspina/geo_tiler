@@ -14,7 +14,6 @@ impl fmt::Display for Tile {
             self.vertices, self.polygons
         )
     }
-    
 }
 
 /// Generates a grid of tiles covering the entire Earth's surface using longitude and latitude coordinates.
@@ -119,11 +118,63 @@ pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) -> Re
 
     for tile in grid {
         let resulting_polygons: MultiPolygon<f64> = tile.vertices.intersection(polygon);
-        
+
         for rp in resulting_polygons {
             tile.polygons.push(rp);
         }
     }
 
     Ok(())
+}
+
+/// Clamps all polygons in each tile to ensure their coordinates stay within the tile boundaries.
+///
+/// This function addresses floating-point precision errors that can occur during polygon intersection
+/// operations, which may result in polygon vertices slightly extending beyond their containing tile's
+/// boundaries. Such precision errors can prevent proper triangulation of the polygons.
+///
+/// # Arguments
+///
+/// * `tiles` - A mutable reference to a vector of tiles. Each tile's polygons will have their
+///             coordinates clamped to the tile's boundary limits.
+pub fn clamp_polygons(tiles: &mut Vec<Tile>) {
+    for tile in tiles {
+
+        // clamping is required because of float math inaccuracies which prevent triangulation from working
+        let tile_exterior: &LineString = tile.vertices.exterior();
+        for polygon in tile.polygons.iter_mut() {
+            
+            clamp_polygon(polygon, tile_exterior);
+        }
+
+    }
+}
+
+/// Clamps a single polygon's coordinates to fit within the specified tile boundary.
+///
+/// This function calculates the minimum and maximum x and y coordinates from the tile's exterior
+/// boundary, then ensures all coordinates in the polygon's exterior ring fall within these bounds
+/// using the clamp operation.
+///
+/// # Arguments
+///
+/// * `polygon` - A mutable reference to the polygon whose coordinates will be clamped.
+/// * `tile_exterior` - The exterior boundary of the tile used to determine clamping limits.
+fn clamp_polygon(polygon: &mut Polygon, tile_exterior: &LineString<f64>) {
+    polygon.exterior_mut(|exterior| {
+        let mut max_x: f64 = f64::MIN; let mut max_y: f64 = f64::MIN; 
+        let mut min_x: f64 = f64::MAX; let mut min_y: f64 = f64::MAX;
+        
+        for coord in tile_exterior {
+            max_x = max_x.max(coord.x);
+            max_y = max_y.max(coord.y);
+            min_x = min_x.min(coord.x);
+            min_y = min_y.min(coord.y);
+        }
+
+        for coord in exterior.coords_mut() {
+            coord.x = coord.x.clamp(min_x, max_x);
+            coord.y = coord.y.clamp(min_y, max_y);
+        }
+    });
 }
