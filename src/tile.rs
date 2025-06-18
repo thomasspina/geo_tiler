@@ -1,7 +1,12 @@
 use geo::{Polygon, Coord, LineString, MultiPolygon, BooleanOps};
-use crate::GeoTilerError;
+use crate::{GeoTilerError, densify_edges};
 use std::fmt;
 
+/// Default maximum distance in degrees between consecutive points during edge densification.
+const DEFAULT_MAX_DISTANCE_BETWEEN_POINTS: f64 = 0.5;
+
+/// Represents a single tile in a geographic grid system.
+/// Contains the tile's rectangular boundary and any polygon fragments that intersect with it.
 #[derive(Debug, Clone)]
 pub struct Tile {
     pub vertices: Polygon<f64>,
@@ -119,7 +124,8 @@ pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) -> Re
     for tile in grid {
         let resulting_polygons: MultiPolygon<f64> = tile.vertices.intersection(polygon);
 
-        for rp in resulting_polygons {
+        for mut rp in resulting_polygons {
+            densify_edges(&mut rp, DEFAULT_MAX_DISTANCE_BETWEEN_POINTS);
             tile.polygons.push(rp);
         }
     }

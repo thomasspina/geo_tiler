@@ -112,9 +112,6 @@ fn main() {
             }
         }
         writeln!(file, "\n]").unwrap();
-
-
-
     }
 }
 

@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 use std::f64::EPSILON;
 use crate::GeoTilerError;
 use nalgebra::{Rotation, Rotation3, Unit, Vector3};
-use geo::{coord, Coord};
+use geo::{coord, Coord, Polygon};
 
 /// Converts geographic coordinates (longitude and latitude) from decimal degrees to 3D Cartesian coordinates
 /// on a unit sphere.
@@ -138,6 +138,71 @@ pub fn rotate_points_to_south_pole(points: &Vec<(f64, f64, f64)>) -> Result<Vec<
     }
 
     Ok(rotated_points)
+}
+
+/// Adds intermediate points along polygon edges that exceed a specified maximum distance.
+///
+/// This function subdivides long edges in a polygon by inserting evenly-spaced intermediate
+/// points, ensuring no edge segment is longer than the specified maximum distance. This is
+/// useful for improving the accuracy of geometric operations on polygons with large edges.
+///
+/// # Arguments
+///
+/// * `polygon` - A mutable reference to the polygon to be densified
+/// * `max_distance` - The maximum allowed distance between consecutive points along an edge
+pub fn densify_edges(polygon: &mut Polygon, max_distance: f64) {
+    polygon.exterior_mut(|exterior| {
+        let mut new_coords: Vec<Coord> = Vec::new();
+        let coords: &Vec<Coord> = &exterior.0;
+        
+        if coords.len() < 2 {
+            return;
+        }
+        
+        new_coords.push(coords[0]); // add first point
+        
+        for i in 0..(coords.len() - 1) {
+            let c1: Coord = coords[i];
+            let c2: Coord = coords[i + 1];
+            let distance: f64 = distance_between(&c1, &c2);
+            
+            if distance > max_distance {
+                let num_segments: usize = (distance / max_distance).ceil() as usize;
+                
+                // add intermediate points
+                for j in 1..num_segments {
+                    let t: f64 = j as f64 / num_segments as f64;
+                    let interpolated: Coord = interpolate_point(&c1, &c2, t);
+                    new_coords.push(interpolated);
+                }
+            }
+            
+            if i < coords.len() - 2 {
+                new_coords.push(c2);
+            }
+        }
+        
+        let last_coord: Coord = coords[coords.len() - 1];
+        if coords.len() > 2 && last_coord != coords[0] {
+            new_coords.push(last_coord);
+        }
+        
+        exterior.0 = new_coords;
+    });
+}
+
+
+fn distance_between(c1: &Coord<f64>, c2: &Coord<f64>) -> f64 {
+    let dx: f64 = c2.x - c1.x;
+    let dy: f64 = c2.y - c1.y;
+    (dx * dx + dy * dy).sqrt()
+}
+
+fn interpolate_point(c1: &Coord<f64>, c2: &Coord<f64>, t: f64) -> Coord<f64> {
+    Coord {
+        x: c1.x + t * (c2.x - c1.x),
+        y: c1.y + t * (c2.y - c1.y),
+    }
 }
 
 
