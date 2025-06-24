@@ -3,7 +3,7 @@ use crate::{GeoTilerError, densify_edges};
 use std::fmt;
 
 /// Default maximum distance in degrees between consecutive points during edge densification.
-const DEFAULT_MAX_DISTANCE_BETWEEN_POINTS: f64 = 0.5;
+const DEFAULT_MAX_DISTANCE_BETWEEN_POINTS: f64 = 1.0;
 
 /// Represents a single tile in a geographic grid system.
 /// Contains the tile's rectangular boundary and any polygon fragments that intersect with it.

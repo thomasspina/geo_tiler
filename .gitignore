@@ -1,1 +1,4 @@
 /target
+/tiles
+test.geojson
+.gitignore
