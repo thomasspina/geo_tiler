@@ -1,8 +1,9 @@
-![Procedurally curved Earth mesh with point-based continental generation](https://github.com/user-attachments/assets/2ec19871-0a8d-4f2e-8bbe-6ecc225d6ae5)
 
-# geo_tiler
+# Geo Tiler and 3D mesh generator
 
 A Rust library for converting 2D geographic coordinates (GeoJSON) into 3D meshes suitable for rendering on spherical globes. This library comes with an executable main file which creates JSON files that stores the 3D meshes generated from the GeoJSON provided. This library solves the fundamental challenge of representing flat map data on curved surfaces by generating properly triangulated meshes that conform to a sphere's curvature. You can find part of the logic for this crate explained in this article I [wrote](https://tricolor-albacore-d39.notion.site/From-Coordinates-to-Continents-Creating-a-3D-Globe-from-2D-Coordinates-1f83a2e4815d809b9606c3b5be791506?pvs=74).
+![Procedurally curved Earth mesh with point-based continental generation](https://github.com/user-attachments/assets/2ec19871-0a8d-4f2e-8bbe-6ecc225d6ae5)
+
 
 ## Features
 
