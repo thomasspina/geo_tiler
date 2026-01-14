@@ -11,7 +11,6 @@ repository = "https://github.com/thomasspina/geo_tiler"
 license = "MIT"
 keywords = ["geo", "mesh", "sphere", "triangulation", "geojson"]
 categories = ["science::geo", "graphics", "rendering"]
-exclude = ["examples/*", "tests/*", ".github/*"]
 
 [[bin]]
 name = "geo_tiler"
