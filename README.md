@@ -1,6 +1,6 @@
 # Geo Tiler
 
-A Rust library for converting 2D geographic polygons into 3D spherical meshes. Transform GeoJSON coordinates into properly triangulated meshes that conform to a sphere's curvature—ideal for rendering geographic data on 3D globes.
+A Rust library for converting 2D geographic polygons into 3D spherical meshes. Transform GeoJSON coordinates into properly triangulated meshes that conform to a sphere's curvature—ideal for rendering geographic data on 3D globes. [Crates.io link](https://crates.io/crates/geo_tiler).
 
 ![Procedurally curved Earth mesh with point-based continental generation](https://github.com/user-attachments/assets/2ec19871-0a8d-4f2e-8bbe-6ecc225d6ae5)
 
