@@ -109,16 +109,6 @@ All fallible functions return `Result<T, GeoTilerError>`. Error variants:
 | `InvalidPolygonError` | Malformed polygon geometry |
 | `TriangulationError` | Constrained Delaunay triangulation failure |
 
-## CLI Usage
-
-The included binary processes GeoJSON files:
-
-```bash
-cargo run --release -- input.geojson output_directory/
-```
-
-This reads polygon features from the GeoJSON, clips them to a 20° grid, generates meshes, and writes JSON files for each tile.
-
 ## Algorithm Pipeline
 
 1. **Parse** polygon boundaries from GeoJSON or `geo` types
