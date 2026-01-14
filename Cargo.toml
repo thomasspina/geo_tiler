@@ -2,6 +2,16 @@
 name = "geo_tiler"
 version = "0.1.0"
 edition = "2024"
+authors = ["Thomas Spina <thomas@thomasspina.com>"]
+description = "Convert 2D geographic polygons into 3D spherical meshes for globe rendering"
+documentation = "https://docs.rs/geo_tiler"
+readme = "README.md"
+homepage = "https://github.com/thomasspina/geo_tiler"
+repository = "https://github.com/thomasspina/geo_tiler"
+license = "MIT"
+keywords = ["geo", "mesh", "sphere", "triangulation", "geojson"]
+categories = ["science::geo", "graphics", "rendering"]
+exclude = ["examples/*", "tests/*", ".github/*"]
 
 [[bin]]
 name = "geo_tiler"
