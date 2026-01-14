@@ -1,18 +1,27 @@
+# Geo Tiler
 
-# Geo Tiler and 3D mesh generator
+A Rust library for converting 2D geographic polygons into 3D spherical meshes. Transform GeoJSON coordinates into properly triangulated meshes that conform to a sphere's curvature—ideal for rendering geographic data on 3D globes.
 
-A Rust library for converting 2D geographic coordinates (GeoJSON) into 3D meshes suitable for rendering on spherical globes. This library comes with an executable main file which creates JSON files that stores the 3D meshes generated from the GeoJSON provided. This library solves the fundamental challenge of representing flat map data on curved surfaces by generating properly triangulated meshes that conform to a sphere's curvature. You can find part of the logic for this crate explained in this article I [wrote](https://tricolor-albacore-d39.notion.site/From-Coordinates-to-Continents-Creating-a-3D-Globe-from-2D-Coordinates-1f83a2e4815d809b9606c3b5be791506?pvs=74).
 ![Procedurally curved Earth mesh with point-based continental generation](https://github.com/user-attachments/assets/2ec19871-0a8d-4f2e-8bbe-6ecc225d6ae5)
 
+## The Problem
 
-## Features
+Projecting 2D coordinates onto a sphere creates flat triangles that cut through the surface. Geo Tiler solves this by:
 
-- **Coordinate Transformation**: Convert latitude/longitude coordinates to 3D Cartesian coordinates
-- **Spherical Interpolation**: Add intermediate points along polygon edges using proper spherical interpolation
-- **Uniform Point Distribution**: Generate evenly distributed points on sphere surfaces using Fibonacci spiral method
-- **Stereographic Projection**: Project 3D points to 2D for accurate triangulation
-- **Constrained Delaunay Triangulation**: Generate optimal mesh triangulation while preserving polygon boundaries
-- **Tile-based Processing**: Divide large geographic regions into manageable tiles for efficient processing
+1. Filling polygon interiors with evenly-distributed Fibonacci lattice points
+2. Using stereographic projection to perform accurate 2D triangulation
+3. Mapping the triangulation back to 3D coordinates on a unit sphere
+
+For a deeper explanation of the algorithm, see [this article](https://tricolor-albacore-d39.notion.site/From-Coordinates-to-Continents-Creating-a-3D-Globe-from-2D-Coordinates-1f83a2e4815d809b9606c3b5be791506).
+
+## Installation
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+geo_tiler = "0.1"
+```
 
 ## Quick Start
 
@@ -20,137 +29,108 @@ A Rust library for converting 2D geographic coordinates (GeoJSON) into 3D meshes
 use geo::{coord, LineString, Polygon};
 use geo_tiler::{generate_polygon_feature_mesh, PolygonMeshData};
 
-// Create a simple triangle polygon
-let coords = vec![
-    coord! {x: -30.0, y: -15.0},
-    coord! {x: 0.0, y: 30.0},
-    coord! {x: 30.0, y: -15.0},
-    coord! {x: -30.0, y: -15.0},  // Closing coordinate
-];
+let polygon = Polygon::new(
+    LineString::new(vec![
+        coord! {x: -30.0, y: -15.0},
+        coord! {x: 0.0, y: 30.0},
+        coord! {x: 30.0, y: -15.0},
+        coord! {x: -30.0, y: -15.0}, // closing coordinate
+    ]),
+    vec![],
+);
 
-let polygon = Polygon::new(LineString::new(coords), vec![]);
-
-// Generate 3D mesh data
-match generate_polygon_feature_mesh(&polygon) {
-    Ok(mesh_data) => {
-        println!("Generated {} vertices and {} triangles", 
-            mesh_data.vertices.len(), 
-            mesh_data.triangles.len() / 3);
-    }
-    Err(e) => eprintln!("Error generating mesh: {}", e),
-}
+let mesh: PolygonMeshData = generate_polygon_feature_mesh(&polygon)?;
+// mesh.vertices: Vec<(f64, f64, f64)> - 3D points on unit sphere
+// mesh.triangles: Vec<u32> - triangle indices [i0, i1, i2, j0, j1, j2, ...]
 ```
 
-## Core Concepts
+## API
 
-### The Problem
+### Mesh Generation
 
-When rendering geographic data on a 3D globe, simply projecting 2D coordinates onto a sphere creates flat triangles that don't follow the sphere's curvature. This library solves this by:
+| Function | Description |
+|----------|-------------|
+| `generate_polygon_feature_mesh(&Polygon)` | Generates a complete triangulated 3D mesh from a geographic polygon |
+| `get_mesh_points(&Polygon)` | Returns 3D Cartesian points (boundary + interior) without triangulation |
 
-1. **Adding interior points**: Using Fibonacci sphere distribution to create evenly-spaced points
-2. **Proper interpolation**: Using spherical linear interpolation (SLERP) for curved edges
-3. **Accurate triangulation**: Using stereographic projection to preserve angles during triangulation
+### Coordinate Conversion
 
-### Algorithm Pipeline
+| Function | Description |
+|----------|-------------|
+| `ll_to_cartesian(lon, lat)` | Converts longitude/latitude (degrees) to 3D Cartesian coordinates on a unit sphere |
+| `stereographic_projection((x, y, z))` | Projects a 3D point to 2D using stereographic projection from the north pole |
+| `rotate_points_to_south_pole(&Vec<(f64, f64, f64)>)` | Rotates points so their centroid aligns with the south pole |
 
-1. **Parse polygon boundaries** from GeoJSON or geo types
-2. **Generate mesh points**:
-   - Optionally densify edges with interpolated points
-   - Create Fibonacci lattice points and filter those inside the polygon
-   - Convert all points to 3D Cartesian coordinates
-3. **Triangulate**:
-   - Rotate points to south pole for optimal projection
-   - Apply stereographic projection to 2D
-   - Perform constrained Delaunay triangulation
-   - Map triangulation back to original 3D points
-4. **Output mesh data** ready for rendering
+### Tiling
 
-## API Reference
+| Function | Description |
+|----------|-------------|
+| `generate_grid(step)` | Creates a grid of tiles covering the Earth's surface with the given angular step (degrees) |
+| `clip_polygon_to_tiles(&mut grid, &Polygon)` | Clips a polygon against all tiles, storing intersections |
+| `clamp_polygons(&mut tiles)` | Fixes floating-point precision errors at tile boundaries |
 
-### Primary Functions
+### Utilities
 
-#### `generate_polygon_feature_mesh`
-Generates a complete 3D mesh from a 2D geographic polygon.
+| Function | Description |
+|----------|-------------|
+| `fibonacci_sphere(n)` | Generates `n` evenly-distributed points on a sphere using the Fibonacci spiral method |
+| `densify_edges(&mut Polygon, max_distance)` | Subdivides polygon edges that exceed `max_distance` |
 
-```rust
-pub fn generate_polygon_feature_mesh(polygon: &Polygon) -> Result<PolygonMeshData, GeoTilerError>
-```
-
-#### `ll_to_cartesian`
-Converts longitude/latitude to 3D Cartesian coordinates on a unit sphere.
+## Data Structures
 
 ```rust
-pub fn ll_to_cartesian(longitude: f64, latitude: f64) -> Result<(f64, f64, f64), GeoTilerError>
-```
-
-#### `generate_grid`
-Creates a grid of tiles covering the Earth's surface.
-
-```rust
-pub fn generate_grid(step: usize) -> Result<Vec<Tile>, GeoTilerError>
-```
-
-#### `clip_polygon_to_tiles`
-Clips a polygon across multiple tiles for distributed processing.
-
-```rust
-pub fn clip_polygon_to_tiles(grid: &mut Vec<Tile>, polygon: &Polygon<f64>) -> Result<(), GeoTilerError>
-```
-
-### Data Structures
-
-#### `PolygonMeshData`
-```rust
+/// Triangulated mesh output
 pub struct PolygonMeshData {
     pub vertices: Vec<(f64, f64, f64)>,  // 3D points on unit sphere
-    pub triangles: Vec<u32>,              // Flattened triangle indices
+    pub triangles: Vec<u32>,              // flattened triangle indices
 }
-```
 
-#### `Tile`
-```rust
+/// A tile in the geographic grid
 pub struct Tile {
-    pub vertices: Polygon<f64>,           // Tile boundary
-    pub polygons: Vec<Polygon<f64>>,      // Polygon fragments in this tile
+    pub vertices: Polygon<f64>,          // tile boundary
+    pub polygons: Vec<Polygon<f64>>,     // clipped polygon fragments
 }
 ```
 
 ## Error Handling
 
-The library provides comprehensive error handling through the `GeoTilerError` enum:
+All fallible functions return `Result<T, GeoTilerError>`. Error variants:
 
-- `CoordinateRangeError`: Invalid longitude/latitude values
-- `ProjectionError`: Stereographic projection failures
-- `FibonacciError`: Issues with point generation
-- `RotationError`: Problems rotating points
-- `MeshGenerationError`: General mesh generation failures
-- `TriangulationError`: Constrained Delaunay triangulation failures
+| Variant | Cause |
+|---------|-------|
+| `CoordinateRangeError` | Longitude outside [-180, 180] or latitude outside [-90, 90] |
+| `ProjectionError` | Attempting to project from the north pole singularity |
+| `InverseProjectionError` | Invalid input (NaN or infinite values) |
+| `FibonacciError` | Invalid point count (zero or negative) |
+| `RotationError` | Zero-magnitude centroid or undefined rotation axis |
+| `EmptyPointSetError` | Empty input where points are required |
+| `MeshGenerationError` | Polygon with fewer than 3 vertices |
+| `GridGenerationError` | Invalid step size (zero, too large, or doesn't divide evenly) |
+| `InvalidPolygonError` | Malformed polygon geometry |
+| `TriangulationError` | Constrained Delaunay triangulation failure |
 
-## Examples
+## CLI Usage
 
-### Processing GeoJSON Files
-
-See the included binary example that processes Natural Earth data:
+The included binary processes GeoJSON files:
 
 ```bash
-cargo run input.geojson output_directory/
+cargo run --release -- input.geojson output_directory/
 ```
 
-### Custom Point Density
+This reads polygon features from the GeoJSON, clips them to a 20° grid, generates meshes, and writes JSON files for each tile.
 
-```rust
-use geo_tiler::{get_mesh_points, fibonacci_sphere};
+## Algorithm Pipeline
 
-// Generate mesh with custom point density
-let mut points = get_mesh_points(&polygon)?;
+1. **Parse** polygon boundaries from GeoJSON or `geo` types
+2. **Generate interior points** using Fibonacci sphere distribution, filtered to polygon interior
+3. **Convert** all points to 3D Cartesian coordinates
+4. **Rotate** points so the centroid is at the south pole (optimal for projection)
+5. **Project** to 2D using stereographic projection
+6. **Triangulate** using constrained Delaunay triangulation with boundary edges as constraints
+7. **Output** 3D vertices and triangle indices
 
-// Add more Fibonacci points if needed
-let extra_points = fibonacci_sphere(5000)?;
-// ... filter and add points as needed
-```
+## References
 
-## Sources
-
-- [Martinez-Rueda Polygon Clipping](https://liorsinai.github.io/mathematics/2025/01/11/bentley-ottman.html) - Lior Sinai
 - [Delaunay/Voronoi on a Sphere](https://www.redblobgames.com/x/1842-delaunay-voronoi-sphere/) – Red Blob Games
-- [How to evenly distribute points on a sphere more effectively than the canonical Fibonacci Lattice](https://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/) - Martin Roberts
+- [Evenly Distributing Points on a Sphere](https://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/) – Martin Roberts
+- [Martinez-Rueda Polygon Clipping](https://liorsinai.github.io/mathematics/2025/01/11/bentley-ottman.html) – Lior Sinai
